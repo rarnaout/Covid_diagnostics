@@ -278,11 +278,25 @@ def get_wilcoxon(df, col1="Ctrl_Ct", col2="Test_Ct", platform="", neg_val=100, v
 	return p_ct, mean1, mean2
 
 
-def get_kappa(df, col1="Ctrl_Ct", col2="Test_Ct", neg_val=37.):
-	y1 = [1 if y < neg_val else 0 for y in list(df[col1])] # y1 = control (NP)
-	y2 = [1 if y < neg_val else 0 for y in list(df[col2])] # y2 = test (nasal)
-	kappa = cohen_kappa_score(y1, y2)
-	return kappa
+def get_kappa_OLD(df, col1="Ctrl_Ct", col2="Test_Ct", neg_val=37.):
+    y1 = [1 if y < neg_val else 0 for y in list(df[col1])] # y1 = control (NP)
+    y2 = [1 if y < neg_val else 0 for y in list(df[col2])] # y2 = test (nasal)
+    kappa = cohen_kappa_score(y1, y2)
+    return kappa
+
+
+def get_kappa(df, col1="Ctrl_Ct", col2="Test_Ct", neg_val_hash=platform_neg_val_hash, verbose=False):
+    y1 = list(df[col1])
+    y2 = list(df[col2])
+    platform = list(df.test_platform)
+    cutoffs = [neg_val_hash[i] for i in platform]
+    y1 = [1 if y < cutoff else 0 for y, cutoff in zip(y1, cutoffs)] # y1 = control
+    y2 = [1 if y < cutoff else 0 for y, cutoff in zip(y2, cutoffs)] # y1 = test
+    if verbose:
+        df1 = pd.DataFrame({"col1": y1, "col2": y2})
+        print(df1)
+    kappa = cohen_kappa_score(y1, y2)
+    return kappa
 
 
 def get_kappa_p_value(df_master, n, kappa, n_rpts=10000):
@@ -295,7 +309,7 @@ def get_kappa_p_value(df_master, n, kappa, n_rpts=10000):
 
 # function for making figure
 figsize = (4,4.3)
-def make_figure(df, label, save=False, vl=False, size=20, alpha=0.7, fontsize=20, col1="Ctrl_Ct", col2="Test_Ct", platform="test_platform", plot_folder="", xlabel="control", ylabel="test", axis_max=False, lod=100):
+def make_figure(df, label, save=False, vl=False, size=20, alpha=0.7, fontsize=20, col1="ctrl_Ct", col2="test_Ct", platform="test_platform", plot_folder="", xlabel="control", ylabel="test", axis_max=False, lod=100, get_kappa=get_kappa):
 	# filter any NaNs and standardize col types
 	df = df[[col1, col2, platform]]
 	df = df.dropna()
@@ -369,7 +383,9 @@ def make_figure(df, label, save=False, vl=False, size=20, alpha=0.7, fontsize=20
 	return
 
 
-def make_2x2table(df, label, col1="Ctrl_Ct", col2="Test_Ct", platform="test_platform", plot_folder="", platform_neg_val_hash=platform_neg_val_hash, save=False, return_data=True, vl=False, categorical=False):
+def make_2x2table(df, label, col1="Ctrl_Ct", col2="Test_Ct", 
+					platform="test_platform", plot_folder="", platform_neg_val_hash=platform_neg_val_hash, 
+					save=False, return_data=True, vl=False, categorical=False, get_kappa=get_kappa):
 	# filter any NaNs and standardize col types
 	df = df[[col1, col2, platform]]
 	df = df.dropna()
